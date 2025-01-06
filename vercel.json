@@ -1,0 +1,16 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "api/commit-checker.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/check-commits",
+        "dest": "api/commit-checker.js"
+      }
+    ]
+  }
+  
