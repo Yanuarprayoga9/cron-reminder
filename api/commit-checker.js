@@ -76,8 +76,6 @@ async function sendWhatsAppMessage(message) {
   }
 }
 
-// Fungsi utama untuk mengecek commit dan mengirim pesan otomatis setiap detik
-const app = express();
 
 // Menggunakan setInterval untuk memeriksa waktu setiap detik
 setInterval(async () => {
@@ -110,7 +108,4 @@ setInterval(async () => {
   }
 }, 60000); // Mengecek setiap menit
 
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+sendWhatsAppMessage("🚀 Commit checker telah diaktifkan!");
