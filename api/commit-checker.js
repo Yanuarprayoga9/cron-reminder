@@ -55,6 +55,8 @@ async function checkCommits(repo) {
       },
     });
 
+    console.log(`Pengecekan commit untuk repo ${repo}:`, response.data.length); // Menambahkan log
+
     return response.data.length > 0;
   } catch (error) {
     console.error(`Error saat memeriksa commit di repo ${repo}:`, error.message);
@@ -76,36 +78,48 @@ async function sendWhatsAppMessage(message) {
   }
 }
 
-
-// Menggunakan setInterval untuk memeriksa waktu setiap detik
-setInterval(async () => {
+// Fungsi untuk mendapatkan hari dan tanggal
+function getFormattedDate() {
   const now = new Date();
-  const hours = now.getUTCHours();
-  const minutes = now.getUTCMinutes();
-  console.log({ hours, minutes });
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  return now.toLocaleDateString('id-ID', options);
+}
 
-  // Mengecek apakah sekarang adalah jam 12 siang UTC
-  if (hours === 3 && minutes === 59) { // 10:38 UTC = 12:00 WIB
-    try {
-      const repos = await getRecentRepositories();
-      let hasCommittedToday = false;
+// Fungsi untuk mengatur pengingat commit
+async function checkAndRemindCommit() {
+  const repos = await getRecentRepositories();
+  let hasCommittedToday = false;
 
-      for (const repo of repos) {
-        if (await checkCommits(repo)) {
-          hasCommittedToday = true;
-          break;
-        }
-      }
-
-      if (hasCommittedToday) {
-        await sendWhatsAppMessage("✅ Anda sudah commit hari ini. Teruskan semangat!");
-      } else {
-        await sendWhatsAppMessage("❗ Anda belum commit hari ini. Jangan lupa untuk commit!");
-      }
-    } catch (error) {
-      console.error("Error:", error.message);
+  for (const repo of repos) {
+    if (await checkCommits(repo)) {
+      hasCommittedToday = true;
+      break;
     }
   }
-}, 60000); // Mengecek setiap menit
 
+  const reminderMessage = `❗ Anda belum commit hari ini (${getFormattedDate()}). Jangan lupa untuk commit!`;
+
+  if (hasCommittedToday) {
+    console.log("✅ Commit sudah dilakukan hari ini.");
+    await sendWhatsAppMessage(`✅ Anda sudah commit hari ini (${getFormattedDate()}). Teruskan semangat!`);
+  } else {
+    console.log("❗ Anda belum commit hari ini.");
+    await sendWhatsAppMessage(reminderMessage);
+
+    // Menunggu 1 jam untuk mengirim pengingat lagi jika belum commit
+    const oneHour = 1 * 60 * 60 * 1000; // 1 jam dalam milidetik
+    setInterval(async () => {
+      console.log("⏳ Mengirim pesan ulang setelah 1 jam.");
+      await sendWhatsAppMessage(reminderMessage);
+    }, oneHour); // Mengirim pengingat setiap 1 jam
+  }
+}
+
+const HalfDay = 12 * 60 * 60 * 1000; // Setengah hari dalam milidetik 
+// Menjalankan pengecekan commit setiap hari pada jam tertentu (misalnya jam 9 pagi UTC)
+setInterval(() => {
+  checkAndRemindCommit();
+}, HalfDay); // Mengecek setiap 24 jam
+
+// Kirim pesan pertama kali untuk memberi tahu bahwa checker aktif
 sendWhatsAppMessage("🚀 Commit checker telah diaktifkan!");
